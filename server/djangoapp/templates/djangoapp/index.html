@@ -22,11 +22,34 @@
             <div class="navbar-header">
                 <a class="navbar-brand text-light" href="#">Dealership Reviews</a>
             </div>
-            <ul class="nav navbar-nav navbar-right">
-                <li>
+            <ul class="nav navbar-nav flex-row">
+                <li class="nav-item">
                     <a class="btn btn-link text-light" href="{% url 'djangoapp:about' %}">About Us</a>
+                </li>
+                <li class="nav-item">
                     <a class="btn btn-link text-light" href="{% url 'djangoapp:contact' %}">Contact Us</a>
                 </li>
+                {% if user.is_authenticated %}
+                    <li class="nav-item"><a class="btn btn-link text-white" href="#">{{ user.first_name }}({{ user.username }})</a></li>
+                    <li class="nav-item"><a class="btn btn-link text-white" href="{% url 'djangoapp:logout' %}">Logout</a></li>
+                {% else %}
+                    <li class="nav-item">
+                        <form class="form-inline" action="{% url 'djangoapp:login' %}" method="post">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Username" name="username" >
+                                <input type="password" class="form-control" placeholder="Password" name="psw" >
+                                <button class="btn btn-primary" type="submit">Login</button>
+                                <a class="btn btn-link text-white" href="{% url 'djangoapp:registration' %}">Sign Up</a>
+                            </div>
+                        </form>
+                        {% if message %}
+                            <div class="alert alert-warning"> <!--Style the message paragraph with .alert and .alert-warning class -->
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </nav>
