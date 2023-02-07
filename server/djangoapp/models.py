@@ -43,13 +43,13 @@ class CarModel(models.Model):
         choices=CAR_TYPE_CHOICES,
         default=SEDAN,
     )
-    car_make = models.ForeignKey(CarMake, on_delete=models.CASCADE)
+    make = models.ForeignKey(CarMake, on_delete=models.CASCADE)
     name = models.CharField(blank=False,max_length=15)
     dealer_id = models.IntegerField(blank=True)
     year = models.DateField(null=True)
 
     def __str__(self):
-        return f'Model: {self.name} Make: {self.car_make}'
+        return f'Model: {self.name} Make: {self.make} Year: {self.year.year}'
 
 # <HINT> Create a plain Python class `CarDealer` to hold dealer data
 class CarDealer:
@@ -83,8 +83,9 @@ class CarDealer:
 # <HINT> Create a plain Python class `DealerReview` to hold review data
 class DealerReview:
 
-    def __init__(self, dealership, name, purchase, review, purchase_date, car_make, car_model, car_year, sentiment, id):
+    def __init__(self, id, dealership, name, purchase, review, sentiment, purchase_date = None, car_make=None, car_model=None, car_year=None):
         # Dealer address
+
         self.dealership = dealership
         # Dealer city
         self.name = name

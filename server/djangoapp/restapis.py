@@ -32,8 +32,9 @@ def get_request(url, **kwargs):
 # Create a `post_request` to make HTTP POST requests
 # e.g., response = requests.post(url, params=kwargs, json=payload)
 def post_request(url,json_payload, **kwargs):
-    print(kwargs)
-    print(f"GET from {url}")
+    print(f'post_request kwargs: {kwargs}')
+    print(f'Post Review JSON payload: {json.dumps(json_payload)}')
+    print(f"POST to {url}")
     try:
         response = requests.post(url, params=kwargs, json=json_payload)
         print('Response json: ',json.dumps(response.json()))
@@ -51,7 +52,9 @@ def post_request(url,json_payload, **kwargs):
 def get_dealers_from_cf(url, **kwargs):
     results = []
     # Call get_request with a URL parameter
+
     json_result = get_request(url)
+
     if json_result:
         # Get the row list in JSON as dealers
         dealers = json_result["result"]
@@ -59,6 +62,9 @@ def get_dealers_from_cf(url, **kwargs):
         for dealer in dealers:
             # Get its content in `doc` object
             dealer_doc = dealer["doc"]
+            if 'language' in dealer_doc and dealer_doc['language']== 'query':
+                continue
+            print(f'dealer_doc: {json.dumps(dealer_doc)}')
             # Create a CarDealer object with values in `doc` object
             dealer_obj = CarDealer(address=dealer_doc["address"], city=dealer_doc["city"], full_name=dealer_doc["full_name"],
                                    id=dealer_doc["id"], lat=dealer_doc["lat"], long=dealer_doc["long"],
@@ -66,6 +72,21 @@ def get_dealers_from_cf(url, **kwargs):
                                    st=dealer_doc["st"], state= dealer_doc['state'], zip=dealer_doc["zip"])
             results.append(dealer_obj)
     return results
+
+def get_dealers_by_id(url, dealerId):
+    
+    json_result = get_request(url,id=dealerId)
+
+    if json_result:
+        # Get the row list in JSON as dealers
+        if len(json_result['result']) > 0 :
+            dealer = json_result["result"][0]
+        # For each dealer object
+            dealer_obj = CarDealer(address=dealer["address"], city=dealer["city"], full_name=dealer["full_name"],
+                        id=dealer["id"], lat=dealer["lat"], long=dealer["long"],
+                        short_name=dealer["short_name"],st=dealer["st"], state= dealer['state'], zip=dealer["zip"])
+        
+            return dealer_obj
 
 
 # Create a get_dealer_reviews_from_cf method to get reviews by dealer id from a cloud function
@@ -78,10 +99,32 @@ def get_dealer_reviews_from_cf(url, dealerId):
         # - Parse JSON results into a DealerView object list
         for review in review_list:
             sentiment=analyze_review_sentiments(review['review'])
-            review_obj = DealerReview(review['dealership'],review['name'],review['purchase'],review['review'],review['purchase_date'],
-            review['car_make'],review['car_model'],review['car_year'],sentiment,review['id'])
+            review_obj = DealerReview(review['id'],review['dealership'],review['name'],review['purchase'],review['review'],
+            sentiment)
+            if review['purchase']== True:
+                review_obj.car_make = review['car_make']
+                review_obj.purchase_date = review['purchase_date']
+                review_obj.car_model = review['car_model']
+                review_obj.car_year = review['car_year']
+
             results.append(review_obj)
     return results
+
+# Get all reviews from cloud function
+def get_all_reviews_from_cf(url):
+# - Call get_request() with specified arguments
+    results = []
+    json_result = get_request(url)
+    if json_result:
+        review_list = json_result["result"]["rows"]
+        # - Parse JSON results into a DealerView object list
+        count = 0
+        for review in review_list:
+            if 'dealership' in review['doc'] :
+                count += 1
+            
+        print(f'Total Number of reviews : {count}')
+    return count
 
 # Create an `analyze_review_sentiments` method to call Watson NLU and analyze text
 def analyze_review_sentiments(text):
@@ -97,9 +140,12 @@ def analyze_review_sentiments(text):
 
     natural_language_understanding.set_service_url(URL)
 
+    print(f'Analyzing sentiment for : {text}')
     response = natural_language_understanding.analyze(
         text=text,
-        features=Features(sentiment=SentimentOptions(targets=[text]))).get_result()
+        features=Features(sentiment=SentimentOptions(targets=[text])),
+        language='en'
+        ).get_result()
 
     print(f'Sentiment response: {json.dumps(response)}')
     return response['sentiment']['document']['label']

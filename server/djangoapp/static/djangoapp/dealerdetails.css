@@ -1,0 +1,18 @@
+
+.review-container{
+    padding:2rem;
+}
+
+.review-title{
+    text-align: center;
+}
+
+.card-container{
+    margin:2rem;
+}
+
+img {
+    width:30px;
+    height:30px;
+    margin:0.5rem 0 0 1.25rem
+}
